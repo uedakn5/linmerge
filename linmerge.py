@@ -6,6 +6,7 @@ Copyright (C) {2016} {Accelight Inc.}
 #specification about coding above must be stated in 1st or 2nd line
 
 import sys, os, re, shlex, subprocess, curses, locale, time, datetime, treemod, filecmp, argparse
+from distutils import spawn
 
 def CheckArgument():
 	parser = argparse.ArgumentParser()
@@ -245,6 +246,8 @@ class Filer(CursesApp):
 		self.start = tree.root
 		self.oldNode=treemod.Node(name="..", status="")
 		self.path = ""
+		self.vimdiffcmd = ""
+		self.setVimdiffCmd()
 		self.setPadInfo()
 		self.mainPad.select(0)
 		self.AllPadRefresh()
@@ -261,6 +264,12 @@ class Filer(CursesApp):
 		self.callbacks[0x0a]=self.Enter
 		self.callbacks[ord("h")]=self.CpToLeft
 		self.callbacks[ord("l")]=self.CpToRight
+
+	def setVimdiffCmd(self):
+		if spawn.find_executable('nvim'):
+			self.vimdiffcmd = 'nvim -d'
+		else:
+			self.vimdiffcmd = 'vimdiff'
 
 	def setPadInfo(self):
 		self.current_nodes=[]
@@ -349,7 +358,8 @@ class Filer(CursesApp):
 			if node.isdir:
 				pass
 			else:
-				cmd = "vimdiff {0}".format(tmp_path)
+				cmd_str = self.vimdiffcmd + " {0}"
+				cmd = cmd_str.format(tmp_path)
 				cmd_result = self.ExecuteShellCmd(cmd)
 				if cmd_result==True:
 					while node != None:
@@ -363,7 +373,8 @@ class Filer(CursesApp):
 			if node.isdir:
 				pass
 			else:
-				cmd = "vimdiff {0}".format(tmp_path)
+				cmd_str = self.vimdiffcmd + " {0}"
+				cmd = cmd_str.format(tmp_path)
 				cmd_result = self.ExecuteShellCmd(cmd)
 				if cmd_result==True:
 					while node != None:
@@ -375,7 +386,8 @@ class Filer(CursesApp):
 		elif node.status == "d" or node.status == "i":
 			left_path = self.tree.left + self.path + "/" + node.name
 			right_path = self.tree.right + self.path + "/" + node.name
-			cmd = "vimdiff {0} {1}".format(left_path, right_path)
+			cmd_str = self.vimdiffcmd + " {0} {1}"
+			cmd = cmd_str.format(left_path, right_path)
 			cmd_result = self.ExecuteShellCmd(cmd, 1)
 			if cmd_result==True:
 				if filecmp.cmp(left_path, right_path) == True:
